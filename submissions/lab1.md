@@ -69,7 +69,7 @@ podman compose up --build -d
 }
 ```
 
-### 1.3 Health Check (all healthy)
+**Health check:**
 
 ```json
 {
@@ -82,7 +82,7 @@ podman compose up --build -d
 }
 ```
 
-### 1.4 Dependency Map
+### 1.3 Read the Architecture
 
 ```mermaid
 graph LR
@@ -110,7 +110,7 @@ gateway → events (confirm after payment)
 - `events/main.py` reads event data from Postgres and stores reservations in Redis with a 5-minute TTL.
 - `payments/main.py` is stateless — it only processes charges and returns a `payment_ref`.
 
-### 1.5 Failure Table
+### 1.4 Systematic Failure Exploration
 
 | Component Killed | Events List | Reserve | Pay | Health Check | User Impact |
 |-----------------|-------------|---------|-----|--------------|-------------|
@@ -119,7 +119,7 @@ gateway → events (confirm after payment)
 | redis           | ✅ Works (200) | ❌ Fails (504 timeout) | ❌ Fails (500 — confirm fails, reservation not found) | ⚠️ Degraded (503, events=down) | Can list events but cannot hold reservations; stale availability counts |
 | postgres        | ❌ Fails (502) | ❌ Fails (500) | ❌ Fails (500) | ⚠️ Degraded (503, events=degraded) | Complete system failure for all write operations; reads also fail |
 
-### 1.6 Load Generator Output (payments killed mid-run)
+### 1.5 Run the Load Generator
 
 ```text
 QuickTicket Load Generator

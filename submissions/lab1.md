@@ -11,12 +11,12 @@
 ### 1.1 Podman Compose PS (all 5 services running)
 
 ```text
-CONTAINER ID  IMAGE                                 COMMAND               CREATED             STATUS                       PORTS                   NAMES
-3203523d2fe5  localhost/app_payments:latest         uvicorn main:app ...  About a minute ago  Up 53 seconds                0.0.0.0:8082->8082/tcp  app_payments_1
-4d34c5b743ac  docker.io/library/postgres:17-alpine  postgres              About a minute ago  Up About a minute (healthy)  0.0.0.0:5432->5432/tcp  app_postgres_1
-14cadf4af5fc  docker.io/library/redis:7-alpine      redis-server          About a minute ago  Up About a minute (healthy)  0.0.0.0:6379->6379/tcp  app_redis_1
-dc58b478c2d7  localhost/app_events:latest           uvicorn main:app ...  About a minute ago  Up About a minute            0.0.0.0:8081->8081/tcp  app_events_1
-1947cd0f0be8  localhost/app_gateway:latest          uvicorn main:app ...  About a minute ago  Up About a minute            0.0.0.0:3080->8080/tcp  app_gateway_1
+CONTAINER ID  IMAGE                                 COMMAND               CREATED      STATUS                   PORTS                   NAMES
+806fadbd616b  localhost/app_payments:latest         uvicorn main:app ...  2 hours ago  Up 2 hours               0.0.0.0:8082->8082/tcp  app_payments_1
+faed6ff34829  docker.io/library/postgres:17-alpine  postgres              2 hours ago  Up 2 hours (healthy)     0.0.0.0:5432->5432/tcp  app_postgres_1
+9fff6132d2e0  docker.io/library/redis:7-alpine      redis-server          2 hours ago  Up 2 hours (healthy)     0.0.0.0:6379->6379/tcp  app_redis_1
+ff551da09931  localhost/app_events:latest           uvicorn main:app ...  2 hours ago  Up 2 hours               0.0.0.0:8081->8081/tcp  app_events_1
+40d21df5d3d5  localhost/app_gateway:latest          uvicorn main:app ...  2 hours ago  Up 2 hours               0.0.0.0:3080->8080/tcp  app_gateway_1
 ```
 
 Deploy command used:
@@ -110,14 +110,25 @@ gateway → events (confirm after payment)
 - `events/main.py` reads event data from Postgres and stores reservations in Redis with a 5-minute TTL.
 - `payments/main.py` is stateless — it only processes charges and returns a `payment_ref`.
 
+**What happens if a dependency is down:**
+
+| Dependency down | Blast radius |
+|-----------------|--------------|
+| postgres | Events cannot read/write data — list, reserve, and confirm all fail |
+| redis | Events can list from Postgres, but reserve/confirm fail (reservations live in Redis) |
+| events | Gateway cannot serve any ticket operations — entire user-facing flow breaks |
+| payments | Browse and reserve still work; only the pay step fails |
+
 ### 1.4 Systematic Failure Exploration
 
-| Component Killed | Events List | Reserve | Pay | Health Check | User Impact |
-|-----------------|-------------|---------|-----|--------------|-------------|
-| payments        | ✅ Works (200) | ✅ Works (200) | ❌ Fails (502 → 503 after fix) | ⚠️ Degraded (503, payments=down) | Can browse and reserve tickets, but cannot complete payment |
-| events          | ❌ Fails (504 timeout) | ❌ Fails (504 timeout) | ❌ Fails (500 — payment succeeds but confirm fails) | ⚠️ Degraded (503, events=down) | Entire ticket flow broken; pay may charge without confirming order |
-| redis           | ✅ Works (200) | ❌ Fails (504 timeout) | ❌ Fails (500 — confirm fails, reservation not found) | ⚠️ Degraded (503, events=down) | Can list events but cannot hold reservations; stale availability counts |
-| postgres        | ❌ Fails (502) | ❌ Fails (500) | ❌ Fails (500) | ⚠️ Degraded (503, events=degraded) | Complete system failure for all write operations; reads also fail |
+For each killed component: which endpoints work/fail, user-visible error, and whether health reflects the problem.
+
+| Component Killed | Events List | Reserve | Pay | Health Check | User Error | User Impact |
+|-----------------|-------------|---------|-----|--------------|------------|-------------|
+| payments        | ✅ 200 | ✅ 200 | ❌ 503 | ⚠️ 503 degraded (`payments=down`) | `{"error":"payments_unavailable","message":"Payment service is temporarily down..."}` | Can browse and reserve tickets, but cannot complete payment |
+| events          | ❌ 504 | ❌ 504 | ❌ 500 | ⚠️ 503 degraded (`events=down`) | `"Events service timeout"` / `"Payment succeeded but confirmation failed — contact support"` | Entire ticket flow broken; pay may charge without confirming order |
+| redis           | ✅ 200 | ❌ 504 | ❌ 500 | ⚠️ 503 degraded (`events=down`) | `"Events service timeout"` / `"Reservation not found or expired"` | Can list events but cannot hold reservations; stale availability counts |
+| postgres        | ❌ 502 | ❌ 500 | ❌ 500 | ⚠️ 503 degraded (`events=degraded`) | `"Events service unavailable"` / `Internal Server Error` | Complete system failure for all write operations; reads also fail |
 
 ### 1.5 Run the Load Generator
 

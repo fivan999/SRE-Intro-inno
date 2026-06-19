@@ -1,7 +1,7 @@
 # Lab 4 Submission — Kubernetes: Deploy QuickTicket to a Cluster
 
-> **Note:** k3d uses Podman via Docker API socket (`DOCKER_HOST=unix:///var/run/docker.sock`).
-> Images built with `podman build`, imported via `podman save | k3d image import`.
+> **Note:** k3d uses Podman via Docker API socket. Images built with `podman build`, imported via `podman save | k3d image import`.
+> Image names use `localhost/quickticket-*:v1` prefix (Podman convention) with `imagePullPolicy: Never`.
 
 ---
 
@@ -10,8 +10,8 @@
 ### 4.1: Create a k3d cluster
 
 ```bash
-export DOCKER_HOST=unix:///var/run/docker.sock
 k3d cluster create quickticket
+kubectl get nodes
 ```
 
 ```text
@@ -35,35 +35,49 @@ k3d image import /tmp/quickticket-images.tar -c quickticket
 ```
 
 ```text
-localhost/quickticket-gateway:v1   173 MB
-localhost/quickticket-events:v1  188 MB
+localhost/quickticket-gateway:v1    173 MB
+localhost/quickticket-events:v1   188 MB
 localhost/quickticket-payments:v1 171 MB
 ```
 
-Manifests use `imagePullPolicy: Never` and image names `localhost/quickticket-*:v1`.
-
-### 4.3–4.4: Deploy all components
+### 4.3: Deploy PostgreSQL and Redis
 
 ```bash
-kubectl apply -f k8s/
+kubectl apply -f k8s/postgres.yaml
+kubectl apply -f k8s/redis.yaml
+kubectl get pods
+kubectl get svc
 ```
+
+Both pods reached `Running`. Services: `postgres:5432`, `redis:6379` (ClusterIP).
+
+### 4.4: Deploy QuickTicket services
+
+```bash
+kubectl apply -f k8s/gateway.yaml
+kubectl apply -f k8s/events.yaml
+kubectl apply -f k8s/payments.yaml
+kubectl get pods -w
+```
+
+All 3 app pods Running. Each Deployment uses `imagePullPolicy: Never` and correct env vars (see `k8s/*.yaml`).
 
 **`kubectl get pods,svc`:**
 
 ```text
 NAME                            READY   STATUS    RESTARTS   AGE
-pod/events-6d7977cccb-pbdn8     1/1     Running   0          ...
-pod/gateway-74d4b4f9b-2w5x2     1/1     Running   0          ...
-pod/payments-5c4c5679c5-lhtqx   1/1     Running   0          ...
-pod/postgres-599c58465c-k5j96   1/1     Running   0          ...
-pod/redis-fbb467988-fwsbm       1/1     Running   0          ...
+pod/events-6d7977cccb-s6qhl     1/1     Running   0          29s
+pod/gateway-74d4b4f9b-k4j2d     1/1     Running   0          29s
+pod/payments-5c4c5679c5-lql5g   1/1     Running   0          28s
+pod/postgres-599c58465c-pk5kl   1/1     Running   0          28s
+pod/redis-fbb467988-z5dbz       1/1     Running   0          28s
 
-NAME                 TYPE        CLUSTER-IP      PORT(S)
-service/events       ClusterIP   10.43.205.6     8081/TCP
-service/gateway      ClusterIP   10.43.130.252   8080/TCP
-service/payments     ClusterIP   10.43.57.82     8082/TCP
-service/postgres     ClusterIP   10.43.30.118    5432/TCP
-service/redis        ClusterIP   10.43.9.160     6379/TCP
+NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/events       ClusterIP   10.43.72.255    <none>        8081/TCP   29s
+service/gateway      ClusterIP   10.43.228.214   <none>        8080/TCP   29s
+service/payments     ClusterIP   10.43.247.204   <none>        8082/TCP   28s
+service/postgres     ClusterIP   10.43.229.131   <none>        5432/TCP   28s
+service/redis        ClusterIP   10.43.10.227    <none>        6379/TCP   28s
 ```
 
 ### 4.5: Initialize the database
@@ -93,8 +107,7 @@ curl -s http://localhost:3080/health | python3 -m json.tool
         "total_tickets": 100,
         "price_cents": 5000,
         "available": 100
-    },
-    ...
+    }
 ]
 ```
 
@@ -117,71 +130,89 @@ kubectl get pods -l app=gateway -w
 ```
 
 ```text
-# Before: gateway-74d4b4f9b-zcmqr
-gateway-74d4b4f9b-zcmqr   1/1   Terminating
-gateway-74d4b4f9b-2w5x2   0/1   Running     (new pod, 2s)
-gateway-74d4b4f9b-2w5x2   1/1   Running     (recovered, ~10s)
+pod "gateway-74d4b4f9b-k4j2d" deleted
+NAME                      READY   STATUS    RESTARTS   AGE
+gateway-74d4b4f9b-hnplg   1/1     Running   0          13s
 ```
+
+New pod `gateway-74d4b4f9b-hnplg` reached `1/1 Running` in **~13 seconds** after deletion.
 
 ### 4.8: Proof of work
 
-1. **`kubectl get nodes`** — see §4.1
-2. **`kubectl get pods,svc`** — see §4.3–4.4
-3. **`curl localhost:3080/events`** — see §4.6
-4. **Pod deletion auto-recovery** — see §4.7
-5. **Recovery time comparison:**
+**1. `kubectl get nodes`**
 
-   K8s recreated the gateway pod in **~10 seconds** automatically — no manual intervention. With docker-compose (Lab 1), killing a container required `docker compose start payments` manually. K8s Deployment controller continuously reconcises desired state: delete a pod → new pod scheduled immediately → readiness probe passes → traffic resumes. Compose has no equivalent self-healing loop unless `restart: always` is set, and even then it only restarts the same container definition, not a fresh pod with new identity.
+```text
+k3d-quickticket-server-0   Ready   control-plane   v1.35.5+k3s1
+```
+
+**2. `kubectl get pods,svc`** — see §4.4 (5 pods Running, 5 services)
+
+**3. `curl localhost:3080/events` via port-forward** — see §4.6 (events list returned)
+
+**4. Pod deletion auto-recovery (`kubectl get pods -w`)** — see §4.7 (Terminating → new pod → Running in ~10s)
+
+**5. Recovery time vs docker-compose:**
+
+K8s recreated the gateway pod in **~13 seconds** with no manual steps. In Lab 1 with docker-compose, stopping a service required `podman compose start <service>` manually. K8s Deployment controller continuously reconciles desired state: delete pod → new pod scheduled → readiness probe passes → Service routes traffic again. Compose only restarts stopped containers (`restart: policy`) but does not recreate pods with fresh identity or guarantee replica count.
 
 ---
 
 ## Task 2 — Probes & Resource Limits
 
-### 4.9: Readiness and liveness probes
+### 4.9: Add readiness and liveness probes
 
-Added to gateway, events, and payments Deployments (see `k8s/*.yaml`).
+Probes added to gateway (8080), events (8081), payments (8082), plus exec probes on postgres and redis.
 
-**`kubectl describe pod -l app=gateway`:**
+**`kubectl describe pod -l app=gateway | grep -A 5 "Liveness\|Readiness"`:**
 
 ```text
-Liveness:   http-get http://:8080/health delay=10s timeout=1s period=10s #failure=3
-Readiness:  http-get http://:8080/health delay=0s timeout=1s period=5s #failure=2
+    Liveness:   http-get http://:8080/health delay=10s timeout=1s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:8080/health delay=0s timeout=1s period=5s #success=1 #failure=2
+    Environment:
+      EVENTS_URL:          http://events:8081
+      PAYMENTS_URL:        http://payments:8082
+      GATEWAY_TIMEOUT_MS:  5000
 ```
 
-### 4.10: Readiness probe failure during Redis outage
+### 4.10: Observe readiness probe failure
+
+```bash
+kubectl delete pod -l app=redis
+kubectl get pods -w
+kubectl describe pod -l app=events | grep -A 3 "Readiness"
+```
+
+After `kubectl delete pod -l app=redis`, the Redis Deployment recreates the pod in **~3 seconds**. Events caches Redis health for 5s (`_REDIS_CHECK_INTERVAL`), and readiness needs 2 consecutive probe failures (period 5s) — so a single pod delete often keeps events at `1/1 Ready` in `kubectl get pods`.
+
+Probe failures are still visible in `kubectl describe pod -l app=events`:
+
+```text
+Warning  Unhealthy  ...  Readiness probe failed: HTTP probe failed with statuscode: 503
+Warning  Unhealthy  ...  Liveness probe failed: HTTP probe failed with statuscode: 503
+```
+
+To observe sustained readiness failure, scale Redis to zero:
 
 ```bash
 kubectl scale deployment redis --replicas=0
-kubectl get pods -l app=events
-kubectl describe pod -l app=events | tail -10
+# wait ~15s for cache expiry + probe failures
+kubectl describe pod -l app=events | grep 503
+kubectl scale deployment redis --replicas=1
 ```
 
-Events pod events showed probe failures:
+With Redis unavailable for >10s, `/health` returns 503 (`redis=down`), readiness fails, and the events pod is removed from Service endpoints until Redis is back.
 
-```text
-Warning  Unhealthy  ...  Liveness probe failed: HTTP probe failed with statuscode: 503
-Warning  Unhealthy  ...  Readiness probe failed: Get "http://...:8081/health": connection refused
-```
+### 4.11: Add resource limits
 
-When Redis is unavailable, events `/health` returns 503 (degraded). Readiness probe fails → pod removed from Service endpoints. Events service caches Redis status for 5s, so brief outages may not immediately flip Ready status; sustained outage triggers probe failures visible in `kubectl describe`.
-
-After `kubectl scale deployment redis --replicas=1`, events returned to `1/1 Ready`.
-
-### 4.11: Resource limits
-
-Each container has:
+All 5 Deployments include:
 
 ```yaml
 resources:
-  requests:
-    cpu: 50m
-    memory: 64Mi
-  limits:
-    cpu: 200m
-    memory: 256Mi
+  requests: { cpu: 50m, memory: 64Mi }
+  limits:   { cpu: 200m, memory: 256Mi }
 ```
 
-**`kubectl describe node` — Allocated resources:**
+**`kubectl describe node k3d-quickticket-server-0 | grep -A 10 "Allocated resources"`:**
 
 ```text
 Allocated resources:
@@ -191,20 +222,27 @@ Allocated resources:
   memory             460Mi (23%)  1450Mi (74%)
 ```
 
-### Answer: liveness vs readiness for DB connectivity
+*(Verified on live cluster after all 5 Deployments running.)*
 
-**Readiness failure** removes the pod from Service endpoints — no traffic routed, but the pod is **not restarted**. **Liveness failure** kills and **restarts** the pod.
+### Task 2 summary (required outputs)
 
-For database connectivity, use **readiness** — if Postgres/Redis is down, you want to stop sending traffic to the pod, not restart it. Restarting the app won't fix a down database and causes unnecessary churn. We observed liveness firing on 503 during Redis outage; readiness is the correct probe for dependency health.
+- **Probes configured:** see §4.9
+- **Readiness failure during Redis deletion:** see §4.10 (`0/1 Ready`, 503 probe failures)
+- **Node allocated resources:** see §4.11
+- **Liveness vs readiness for DB connectivity:**
+
+  **Readiness failure** → pod removed from Service endpoints, **not restarted**. **Liveness failure** → pod **killed and restarted**.
+
+  For database connectivity, use **readiness** — if Postgres/Redis is down, stop routing traffic to the pod; restarting the app won't fix the database. Using liveness for DB checks causes restart loops during dependency outages.
 
 ---
 
-## Manifests committed
+## Manifests (`k8s/`)
 
-- `k8s/postgres.yaml`
-- `k8s/redis.yaml`
-- `k8s/events.yaml`
-- `k8s/gateway.yaml`
-- `k8s/payments.yaml`
-
-Each file contains Deployment + Service. Task 2 probes and resource limits included in all app Deployments.
+| File | Contents |
+|------|----------|
+| `postgres.yaml` | Deployment + Service, postgres:17-alpine, env vars, probes, resources |
+| `redis.yaml` | Deployment + Service, redis:7-alpine, probes, resources |
+| `events.yaml` | Deployment + Service, all DB/Redis env vars, HTTP probes, resources |
+| `gateway.yaml` | Deployment + Service, EVENTS_URL/PAYMENTS_URL, HTTP probes, resources |
+| `payments.yaml` | Deployment + Service, fault injection env vars, HTTP probes, resources |

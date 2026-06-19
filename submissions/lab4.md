@@ -246,3 +246,125 @@ Allocated resources:
 | `events.yaml` | Deployment + Service, all DB/Redis env vars, HTTP probes, resources |
 | `gateway.yaml` | Deployment + Service, EVENTS_URL/PAYMENTS_URL, HTTP probes, resources |
 | `payments.yaml` | Deployment + Service, fault injection env vars, HTTP probes, resources |
+
+---
+
+## Bonus Task — Helm Chart
+
+### B.1–B.2: Chart scaffold and templates
+
+Raw manifests converted to `k8s/chart/` with parameterized `values.yaml`.
+
+**`k8s/chart/Chart.yaml`:**
+
+```yaml
+apiVersion: v2
+name: quickticket
+description: QuickTicket SRE learning project
+version: 0.1.0
+```
+
+**`k8s/chart/values.yaml`:**
+
+```yaml
+imagePullPolicy: Never
+
+resources:
+  requests: { cpu: 50m, memory: 64Mi }
+  limits:   { cpu: 200m, memory: 256Mi }
+
+postgres:
+  replicas: 1
+  image: postgres:17-alpine
+  db: quickticket
+  user: quickticket
+  password: quickticket
+
+redis:
+  replicas: 1
+  image: redis:7-alpine
+
+gateway:
+  replicas: 1
+  image: localhost/quickticket-gateway:v1
+  eventsUrl: http://events:8081
+  paymentsUrl: http://payments:8082
+  timeoutMs: "5000"
+
+events:
+  replicas: 1
+  image: localhost/quickticket-events:v1
+  db:
+    host: postgres
+    port: "5432"
+    name: quickticket
+    user: quickticket
+    password: quickticket
+  dbMaxConns: "10"
+  redis:
+    host: redis
+    port: "6379"
+    timeoutMs: "1000"
+  reservationTtl: "300"
+
+payments:
+  replicas: 1
+  image: localhost/quickticket-payments:v1
+  failureRate: "0.0"
+  latencyMs: "0"
+```
+
+Templates in `k8s/chart/templates/`: `postgres.yaml`, `redis.yaml`, `gateway.yaml`, `events.yaml`, `payments.yaml` — hardcoded values replaced with `{{ .Values.* }}`.
+
+### B.3: Install and verify
+
+```bash
+kubectl delete -f k8s/postgres.yaml -f k8s/redis.yaml \
+  -f k8s/gateway.yaml -f k8s/events.yaml -f k8s/payments.yaml
+helm install quickticket k8s/chart/
+kubectl get pods
+helm list
+```
+
+**`helm list`:**
+
+```text
+NAME        NAMESPACE  REVISION  STATUS    CHART
+quickticket default    1         deployed  quickticket-0.1.0
+monitoring  default    1         deployed  kube-prometheus-stack-86.3.2
+```
+
+**`kubectl get pods` after Helm install (QuickTicket):**
+
+```text
+NAME                        READY   STATUS    RESTARTS   AGE
+events-6d7977cccb-5hjd6     1/1     Running   0          74s
+gateway-74d4b4f9b-ldbwx     1/1     Running   0          74s
+payments-5c4c5679c5-p95b7   1/1     Running   0          74s
+postgres-599c58465c-tz4rw   1/1     Running   0          74s
+redis-fbb467988-qhw2p       1/1     Running   0          74s
+```
+
+DB re-seeded, `curl localhost:3080/health` → healthy after Helm deploy.
+
+### B.4: Monitoring via Helm
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --set grafana.adminPassword=admin \
+  --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
+```
+
+**Monitoring pods created (6 with `release=monitoring` label):**
+
+```text
+alertmanager-monitoring-kube-prometheus-alertmanager-0
+monitoring-grafana-6f784bf566-6nbgl
+monitoring-kube-prometheus-operator-748cc88c88-w744v
+monitoring-kube-state-metrics-6b8f7fb688-rrfgs
+monitoring-prometheus-node-exporter-dxn4q
+prometheus-monitoring-kube-prometheus-prometheus-0
+```
+
+kube-prometheus-stack adds Grafana, Prometheus Operator, Prometheus, Alertmanager, kube-state-metrics, and node-exporter — **6 pods** on a single-node k3d cluster (some pods run multiple containers, e.g. Grafana 3/3, Prometheus 2/2).

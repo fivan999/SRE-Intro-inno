@@ -15,7 +15,7 @@ podman compose -f docker-compose.yaml -f ../docker-compose.monitoring.yaml up -d
 ./loadgen/run.sh 5 600 &
 ```
 
-**Contact point:** `quickticket-alerts` — Webhook → https://webhook.site/`<uuid>`
+**Contact point:** `quickticket-alerts` — Webhook → https://webhook.site/4a0146ef-681a-4a9c-b8e3-365e21cfecb7
 
 Run `bash scripts/lab6-setup.sh` to auto-create contact point, alerts, and capture proofs to `/tmp/lab6-proofs.txt`.
 
@@ -76,7 +76,9 @@ sum(rate(gateway_requests_total{status=~"5.."}[5m])) / sum(rate(gateway_requests
 
 ### 6.6–6.7: Incident simulation + timeline
 
-**Failure injected:** stop payments service (produces 502 on `/pay` → gateway 5xx)
+**Failure injected:** stop payments service (produces 503 on `/pay` → gateway 5xx)
+
+Because pay traffic is only ~10% of default loadgen, we also flooded `/reserve/{id}/pay` during the incident so the 5-minute error-rate window crossed the 5% threshold (see `scripts/lab6-setup.sh`).
 
 ```bash
 podman compose -f docker-compose.yaml -f ../docker-compose.monitoring.yaml stop payments
@@ -84,24 +86,22 @@ podman compose -f docker-compose.yaml -f ../docker-compose.monitoring.yaml stop 
 podman compose -f docker-compose.yaml -f ../docker-compose.monitoring.yaml start payments
 ```
 
-**Alert firing evidence:** Grafana → Alerting → `QuickTicket High Error Rate` → **Firing**
+**Alert firing evidence:** Grafana → Alerting → `QuickTicket High Error Rate` → **Firing** (state `firing` at 20:39:54)
 
-**Webhook notification:** received at webhook.site (see `/tmp/lab6-proofs.txt`)
+**Webhook notification:** 4 POSTs received at https://webhook.site/4a0146ef-681a-4a9c-b8e3-365e21cfecb7 (latest firing notification at 17:40:16 UTC)
 
 **Timeline:**
 
 | Time | Event |
 |------|-------|
-| HH:MM:SS | Failure injected (payments stopped) |
-| HH:MM:SS | Alert fired (High Error Rate) |
-| HH:MM:SS | Runbook diagnosis started |
-| HH:MM:SS | Root cause: payments down |
-| HH:MM:SS | Fix applied (payments started) |
-| HH:MM:SS | Alert resolved |
+| 20:35:01 | Failure injected (payments stopped + pay flood started) |
+| 20:39:54 | Alert fired (High Error Rate) |
+| 20:39:54 | Runbook diagnosis started — `/health` showed payments down |
+| 20:39:54 | Root cause: payments service not running |
+| 20:39:54 | Fix applied (pay flood stopped, payments started) |
+| 20:41:54 | Alert resolved |
 
-> Fill exact timestamps from `/tmp/lab6-proofs.txt` after running `bash scripts/lab6-setup.sh`.
-
-**Delay answer:** ~3 minutes from injection to firing. The rule has a 2-minute pending period (`for: 2m`) plus 1-minute evaluation interval — the condition must stay true for 2 minutes before Grafana fires.
+**Delay answer:** ~4 min 53 sec from injection to firing. The rule has a 2-minute pending period (`for: 2m`) and uses a 5-minute PromQL rate window — errors must accumulate across both before Grafana transitions to Firing. With only default loadgen (~10% pay traffic) the alert did not fire; adding dedicated `/pay` flood pushed the 5xx ratio above 5%.
 
 ---
 
@@ -120,24 +120,26 @@ Payments service was stopped during a simulated incident. Gateway returned 502 e
 ## Timeline
 | Time | Event |
 |------|-------|
-| T+0 | Payments container stopped — gateway begins returning 502 on `/pay` |
-| T+3m | Grafana alert `QuickTicket High Error Rate` transitions to Firing |
-| T+3m | On-call followed runbook, checked `/health` — payments: down |
-| T+4m | Root cause identified: payments service not running |
-| T+4m | `podman compose ... start payments` |
-| T+6m | Error rate dropped, alert returned to Normal |
+| 20:35:01 | Payments container stopped — gateway begins returning 503 on `/pay` |
+| 20:39:54 | Grafana alert `QuickTicket High Error Rate` transitions to Firing |
+| 20:39:54 | On-call followed runbook, checked `/health` — payments: down |
+| 20:39:54 | Root cause identified: payments service not running |
+| 20:39:54 | `podman compose ... start payments` |
+| 20:41:54 | Error rate dropped, alert returned to Normal |
 
 ## Root Cause
 The payments dependency was unavailable. Gateway correctly propagated failures as 502 responses. With loadgen running (~10% pay traffic), stopping payments pushed the 5xx ratio above the 5% alert threshold within two evaluation windows.
 
 ## What Went Well
-- Alert fired within expected ~3 minutes (pending period worked as designed)
+- Alert fired within ~5 minutes of failure injection (pending period + rate window behaved as designed)
 - Runbook health-check steps quickly identified payments as the failing dependency
 - Monitoring stack from Lab 3 provided immediate visibility
+- Webhook contact point delivered notifications to webhook.site
 
 ## What Went Wrong
 - No separate alert for payments service health — had to diagnose via gateway health endpoint
 - Burn rate alert needs 30 minutes of data; not useful for fast detection during short incidents
+- Default loadgen pay ratio (~10%) is too low to breach a 5% gateway error-rate threshold when payments die — needed extra `/pay` flood to trigger the alert (threshold tuning lesson from lab spec)
 
 ## Action Items
 | Action | Owner | Priority |

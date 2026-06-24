@@ -28,7 +28,6 @@ grafana_api() {
 }
 
 echo "=== 6.1 Start stack ==="
-/opt/homebrew/bin/podman machine start 2>/dev/null || true
 cd "$APP"
 dc up -d --build
 wait_url "$GRAFANA_URL/api/health"
@@ -82,10 +81,14 @@ payload = {
   "data": [
     {"refId": "A", "relativeTimeRange": {"from": 600, "to": 0}, "datasourceUid": ds,
      "model": {"expr": expr, "refId": "A", "intervalMs": 1000, "maxDataPoints": 43200}},
+    {"refId": "B", "relativeTimeRange": {"from": 0, "to": 0}, "datasourceUid": "__expr__",
+     "model": {"refId": "B", "type": "reduce", "expression": "A", "reducer": "last",
+               "datasource": {"type": "__expr__", "uid": "__expr__"}, "intervalMs": 1000, "maxDataPoints": 43200}},
     {"refId": "C", "relativeTimeRange": {"from": 0, "to": 0}, "datasourceUid": "__expr__",
-     "model": {"refId": "C", "type": "threshold", "datasource": {"type": "__expr__", "uid": "__expr__"},
+     "model": {"refId": "C", "type": "threshold", "expression": "B",
+               "datasource": {"type": "__expr__", "uid": "__expr__"}, "intervalMs": 1000, "maxDataPoints": 43200,
                "conditions": [{"type": "query", "evaluator": {"type": "gt", "params": [float(threshold)]},
-                               "operator": {"type": "and"}, "query": {"params": ["A"]},
+                               "operator": {"type": "and"}, "query": {"params": ["C"]},
                                "reducer": {"type": "last", "params": []}}]}}
   ]
 }
@@ -102,17 +105,30 @@ make_alert "QuickTicket SLO Burn Rate" "$BURN_EXPR" "6" "5m" "warning" "SLO burn
 
 echo "=== loadgen ==="
 pkill -f 'loadgen/run.sh' 2>/dev/null || true
-"$APP/loadgen/run.sh" 5 600 >/tmp/lab6-loadgen.log 2>&1 &
-sleep 30
+pkill -f 'lab6-pay-flood' 2>/dev/null || true
+"$APP/loadgen/run.sh" 10 900 >/tmp/lab6-loadgen.log 2>&1 &
+sleep 45
 
 echo "=== 6.6 Inject failure (stop payments) ==="
 T_INJECT=$(date +%H:%M:%S)
 echo "INJECT_AT=$T_INJECT"
 dc stop payments
+# Pay traffic is only ~10% of loadgen; flood /pay so 5xx rate crosses the 5% threshold.
+(
+  while true; do
+    EVENT_ID=$((RANDOM % 5 + 1))
+    RESERVE_RESP=$(curl -sf -X POST -H 'Content-Type: application/json' \
+      -d '{"quantity":1}' "http://localhost:3080/events/$EVENT_ID/reserve" 2>/dev/null || echo '{}')
+    RES_ID=$(echo "$RESERVE_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('reservation_id',''))" 2>/dev/null || true)
+    [ -n "$RES_ID" ] && curl -sf -o /dev/null -X POST "http://localhost:3080/reserve/$RES_ID/pay" 2>/dev/null || true
+    sleep 0.1
+  done
+) >/tmp/lab6-pay-flood.log 2>&1 &
+PAY_FLOOD_PID=$!
 
-echo "Waiting for alert to fire (up to 5 min)..."
+echo "Waiting for alert to fire (up to 10 min)..."
 T_FIRE=""
-for i in $(seq 1 30); do
+for i in $(seq 1 60); do
   STATE=$(grafana_api "$GRAFANA_URL/api/v1/provisioning/alert-rules" | python3 -c "
 import sys,json
 rules=json.load(sys.stdin)
@@ -138,6 +154,7 @@ done
 T_DIAG=$(date +%H:%M:%S)
 
 echo "=== Fix ==="
+kill "$PAY_FLOOD_PID" 2>/dev/null || pkill -f 'lab6-pay-flood' 2>/dev/null || true
 dc start payments
 T_FIX=$(date +%H:%M:%S)
 sleep 120

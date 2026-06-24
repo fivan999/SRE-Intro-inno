@@ -12,13 +12,15 @@
 
 https://github.com/fivan999/SRE-Intro-inno/actions/runs/28059578978
 
-**Packages (`gh api user/packages?package_type=container`):**
+**Images in ghcr.io (pull proof):**
 
-```text
-gh: Resource not accessible by personal access token (HTTP 403)
+```bash
+docker pull ghcr.io/fivan999/quickticket-gateway:58a3cdacb8d844a7ec64d02a9005d2d6465f7551
+docker pull ghcr.io/fivan999/quickticket-events:58a3cdacb8d844a7ec64d02a9005d2d6465f7551
+docker pull ghcr.io/fivan999/quickticket-payments:58a3cdacb8d844a7ec64d02a9005d2d6465f7551
 ```
 
-> **Manual proof:** GitHub → **Packages** → `quickticket-gateway`, `quickticket-events`, `quickticket-payments`.
+Packages: `quickticket-gateway`, `quickticket-events`, `quickticket-payments`.
 
 ### 5.3: K8s manifests use ghcr.io
 

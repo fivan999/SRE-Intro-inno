@@ -86,7 +86,11 @@ podman compose -f docker-compose.yaml -f ../docker-compose.monitoring.yaml stop 
 podman compose -f docker-compose.yaml -f ../docker-compose.monitoring.yaml start payments
 ```
 
-**Alert firing evidence:** Grafana → Alerting → `QuickTicket High Error Rate` → **Firing** (state `firing` at 20:39:54)
+**Alert firing evidence:** Grafana → Alerting → active alert notification (webhook payload):
+
+![Grafana alert firing — QuickTicket SLO Burn Rate (warning)](assets/lab6-alert-firing.png)
+
+Primary incident alert: `QuickTicket High Error Rate` → **Firing** at 20:39:54 (see timeline below). Screenshot shows the related `QuickTicket SLO Burn Rate` alert also active (`severity=warning`, burn rate ≈ 7.62 > threshold 6).
 
 **Webhook notification:** 4 POSTs received at https://webhook.site/4a0146ef-681a-4a9c-b8e3-365e21cfecb7 (latest firing notification at 17:40:16 UTC)
 

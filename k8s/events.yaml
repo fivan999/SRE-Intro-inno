@@ -32,7 +32,7 @@ spec:
             - name: DB_PASS
               value: quickticket
             - name: DB_MAX_CONNS
-              value: "10"
+              value: "20"
             - name: REDIS_HOST
               value: redis
             - name: REDIS_PORT
@@ -43,11 +43,11 @@ spec:
               value: "300"
           resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
+              cpu: 100m
+              memory: 128Mi
             limits:
-              cpu: 200m
-              memory: 256Mi
+              cpu: 500m
+              memory: 512Mi
           livenessProbe:
             httpGet:
               path: /health

@@ -20,7 +20,7 @@ At **50+ concurrent users** the system violates both availability and latency SL
 ## 2. Load Test Results
 
 Locust ran **in-cluster** (`http://gateway:8080`) with Redis `FLUSHDB` between runs.  
-409 Conflicts not observed in failure reports at any level — failures were 5xx/timeouts under overload.
+At 50u+ the system fails with 5xx/timeouts before inventory 409s appear in Locust error reports (409 column = 0).
 
 | Users | Ramp | RPS | p50 | p95 | p99 | 5xx error rate | 409 (inventory) |
 |------:|-----:|----:|----:|----:|----:|---------------:|----------------:|
@@ -78,7 +78,7 @@ Solo-student cadence is slower than elite platform teams but recovery is fast th
 
 **Current ceiling:** ~**23 RPS** at 50 concurrent users (breaking point).
 
-**Per-pod CPU at breaking point (`kubectl top pods`):**
+**Per-pod CPU at breaking point (`kubectl top pods`, sampled after load-50 while cluster still warm):**
 
 ```text
 gateway (5 pods): 34–59m CPU  (limit 200m) — headroom

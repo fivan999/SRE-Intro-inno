@@ -58,6 +58,8 @@ Nullable `email` column added with zero additional 5xx under mixedload traffic.
 | After DROP TABLE orders | 5 | — (table gone) |
 | After pg_restore | 5 | 50 |
 
+**API after restore:** `curl http://gateway:8080/events` → `/events=200`
+
 ### 9.7: RPO answer
 
 **RPO of a single manual `pg_dump`:** equal to the time since the last dump. In our run the backup was taken at 14:17:15 UTC and the pod kill at 14:17:17 UTC — **~2 seconds** of write window. Any orders created after the dump would be lost on restore.
@@ -102,11 +104,29 @@ Backup was taken seconds before the kill, so no order rows were lost. Prometheus
 
 ### B.1: PVC Postgres diff
 
-Added to `k8s/postgres.yaml`:
-
-- `PersistentVolumeClaim` `postgres-data` (1Gi, ReadWriteOnce)
-- `PGDATA=/var/lib/postgresql/data/pgdata` (subdir avoids lost+found issues)
-- `volumeMounts` on the data directory
+```diff
++apiVersion: v1
++kind: PersistentVolumeClaim
++metadata:
++  name: postgres-data
++spec:
++  accessModes: [ReadWriteOnce]
++  resources:
++    requests:
++      storage: 1Gi
+ ---
+ containers:
++  env:
++    - name: PGDATA
++      value: /var/lib/postgresql/data/pgdata
++  volumeMounts:
++    - name: data
++      mountPath: /var/lib/postgresql/data
++volumes:
++  - name: data
++    persistentVolumeClaim:
++      claimName: postgres-data
+```
 
 **Re-run disaster with PVC:**
 
@@ -119,9 +139,7 @@ Added to `k8s/postgres.yaml`:
 
 ### B.2: CronJob backup (`k8s/backup-cronjob.yaml`)
 
-- Schedule: `*/5 * * * *`, `concurrencyPolicy: Forbid`
-- Image: `postgres:17-alpine`, dumps to `/backups/quickticket_<UTC>.dump` (custom format)
-- Retention: keep 5 newest, delete older
+Committed in PR — key spec: schedule `*/5 * * * *`, `concurrencyPolicy: Forbid`, `postgres:17-alpine`, dumps to `/backups/quickticket_<UTC>.dump`, retention keeps 5 newest via `tail -n +6 | rm`.
 
 **manual-6 / manual-7 rotation logs:**
 

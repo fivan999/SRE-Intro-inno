@@ -1,0 +1,468 @@
+=== Lab 12 proofs ===
+Starting machine "podman-machine-default"
+[36mINFO[0m[0000] No nodes found for cluster 'quickticket', nothing to delete. 
+[36mINFO[0m[0000] No clusters found                            
+[36mINFO[0m[0000] Prep: Network                                
+[36mINFO[0m[0000] Created network 'k3d-quickticket'            
+[36mINFO[0m[0000] Created image volume k3d-quickticket-images  
+[36mINFO[0m[0000] Starting new tools node...                   
+[36mINFO[0m[0000] Starting node 'k3d-quickticket-tools'        
+[36mINFO[0m[0001] Creating node 'k3d-quickticket-server-0'     
+[36mINFO[0m[0001] Creating LoadBalancer 'k3d-quickticket-serverlb' 
+[36mINFO[0m[0001] Using the k3d-tools node to gather environment information 
+[36mINFO[0m[0001] HostIP: using network gateway 10.89.0.1 address 
+[36mINFO[0m[0001] Starting cluster 'quickticket'               
+[36mINFO[0m[0001] Starting servers...                          
+[36mINFO[0m[0001] Starting node 'k3d-quickticket-server-0'     
+[36mINFO[0m[0004] All agents already running.                  
+[36mINFO[0m[0004] Starting helpers...                          
+[36mINFO[0m[0004] Starting node 'k3d-quickticket-serverlb'     
+[36mINFO[0m[0010] Injecting records for hostAliases (incl. host.k3d.internal) and for 2 network members into CoreDNS configmap... 
+[36mINFO[0m[0011] Cluster 'quickticket' created successfully!  
+[36mINFO[0m[0011] You can now use it like this:                
+kubectl cluster-info
+node/k3d-quickticket-server-0 condition met
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon   21.5kB
+STEP 1/9: FROM python:3.13-slim
+STEP 2/9: WORKDIR /app
+--> Using cache 0750fea72514607a90827503a76018d9ac6e3ea2eecbb4af256ddd579f667a0e
+--> 0750fea72514
+STEP 3/9: COPY requirements.txt .
+--> Using cache b2cec3644ce39225851dc2e8d95ff014795ded9af80ac537a6051d3c8d1d61e1
+--> b2cec3644ce3
+STEP 4/9: RUN pip install --no-cache-dir -r requirements.txt
+--> Using cache ad8db6e64433bf0224316a251378f1559a093fbbc8af10d625083c6daeef155f
+--> ad8db6e64433
+STEP 5/9: COPY main.py .
+--> Using cache 60402a5a3fe67b332dbbb93850816a27fb6b90a05d1a7898358856b6a1745661
+--> 60402a5a3fe6
+STEP 6/9: EXPOSE 8080
+--> Using cache ad066e1207429b4ed86772efe1c0e4dd50c712ecb399fc4ec0d622d4e0ee5951
+--> ad066e120742
+STEP 7/9: RUN addgroup --system app && adduser --system --ingroup app app
+--> Using cache d0b4206b151efec4fd438382ad4a564ff924af342bd74c35663926b60c824ff5
+--> d0b4206b151e
+STEP 8/9: USER app
+--> Using cache 8f4dd7aa5c12c8813d20a44c169d468e212e5400fae57c0a4e5cfac0ae317d17
+--> 8f4dd7aa5c12
+STEP 9/9: CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+--> Using cache b113e64cb9fcd0bae682a2327181624603fbebfd95d151091c7ae8b52dedba8a
+COMMIT docker.io/library/quickticket-gateway:v1
+--> b113e64cb9fc
+Successfully tagged docker.io/library/quickticket-gateway:v1
+b113e64cb9fcd0bae682a2327181624603fbebfd95d151091c7ae8b52dedba8a
+Successfully built b113e64cb9fc
+Successfully tagged quickticket-gateway:v1
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  26.62kB
+STEP 1/9: FROM python:3.13-slim
+STEP 2/9: WORKDIR /app
+--> Using cache 0750fea72514607a90827503a76018d9ac6e3ea2eecbb4af256ddd579f667a0e
+--> 0750fea72514
+STEP 3/9: COPY requirements.txt .
+--> Using cache 1e0fef536d2fc5b4b68b18108ddcaf6b4e867d83769b24b4498ee18f2ae2138f
+--> 1e0fef536d2f
+STEP 4/9: RUN pip install --no-cache-dir -r requirements.txt
+--> Using cache d4f237f50f36e0f86d9e145634744bb3aea5f230ae81e6cac6daf2c31d66e910
+--> d4f237f50f36
+STEP 5/9: COPY main.py .
+--> Using cache 45dc28b790ce02612c398d1bff53ef502227a57010db6706c3e791c864226b79
+--> 45dc28b790ce
+STEP 6/9: EXPOSE 8081
+--> Using cache 89680f0b63df6483910febc1e3dfa5703eaf8bddda98f0544a540c2769e4e932
+--> 89680f0b63df
+STEP 7/9: RUN addgroup --system app && adduser --system --ingroup app app
+--> Using cache 24d193c48bd2aff77ed1b641dea6f8624e817d12133a71ea5166358a92a1bf45
+--> 24d193c48bd2
+STEP 8/9: USER app
+--> Using cache 1aa56cd085653b10821257b5199d1178f45e1f88b4cdbe571be5d0acb51812b3
+--> 1aa56cd08565
+STEP 9/9: CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8081"]
+--> Using cache c521b88ae3a1d95ce33c946aa688aa8bd89fbd5e75c2de1fc9d89e5a3783f471
+COMMIT docker.io/library/quickticket-events:v1
+--> c521b88ae3a1
+Successfully tagged docker.io/library/quickticket-events:v1
+c521b88ae3a1d95ce33c946aa688aa8bd89fbd5e75c2de1fc9d89e5a3783f471
+Successfully built c521b88ae3a1
+Successfully tagged quickticket-events:v1
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  7.168kB
+STEP 1/9: FROM python:3.13-slim
+STEP 2/9: WORKDIR /app
+--> Using cache 0750fea72514607a90827503a76018d9ac6e3ea2eecbb4af256ddd579f667a0e
+--> 0750fea72514
+STEP 3/9: COPY requirements.txt .
+--> Using cache a872af395f4b1eb2db88c444818ce4a1991f9222f74f0eb940268f56a4e21b78
+--> a872af395f4b
+STEP 4/9: RUN pip install --no-cache-dir -r requirements.txt
+--> Using cache a7b7ca5aeca656bb1a399952c17124d20435afc64670acd401b55219c66be83a
+--> a7b7ca5aeca6
+STEP 5/9: COPY main.py .
+--> Using cache f0156b8adeda3ae4f423f60a33bc3e080db35faa8bad890d4899cffd413c8ebe
+--> f0156b8adeda
+STEP 6/9: EXPOSE 8083
+--> Using cache 34a108b1221e5fd6105a7e5ef767e3128ed2a68f364513cbb0d473fee30636ab
+--> 34a108b1221e
+STEP 7/9: RUN addgroup --system app && adduser --system --ingroup app app
+--> Using cache 9aaf5f523026d4cc52eedc462d63706a8735190d6e50f97590bca6567689dfee
+--> 9aaf5f523026
+STEP 8/9: USER app
+--> Using cache 302bac9f574901bbb899ee319f482fc43dd4ccf6da78b905f54c5e923ba34164
+--> 302bac9f5749
+STEP 9/9: CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8083"]
+--> Using cache 82271123a84c4d03b701f1928bc6a4966a9f9666c6454039af8db25750814cec
+COMMIT docker.io/library/quickticket-notifications:v1
+--> 82271123a84c
+Successfully tagged docker.io/library/quickticket-notifications:v1
+82271123a84c4d03b701f1928bc6a4966a9f9666c6454039af8db25750814cec
+Successfully built 82271123a84c
+Successfully tagged quickticket-notifications:v1
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon   7.68kB
+STEP 1/9: FROM python:3.13-slim
+STEP 2/9: WORKDIR /app
+--> Using cache 0750fea72514607a90827503a76018d9ac6e3ea2eecbb4af256ddd579f667a0e
+--> 0750fea72514
+STEP 3/9: COPY requirements.txt .
+--> Using cache a872af395f4b1eb2db88c444818ce4a1991f9222f74f0eb940268f56a4e21b78
+--> a872af395f4b
+STEP 4/9: RUN pip install --no-cache-dir -r requirements.txt
+--> Using cache a7b7ca5aeca656bb1a399952c17124d20435afc64670acd401b55219c66be83a
+--> a7b7ca5aeca6
+STEP 5/9: COPY main.py .
+--> Using cache 4a95c4cdefd0a1021034d334ad9ab8e11f62805e310f33cd532e7bf606cf9728
+--> 4a95c4cdefd0
+STEP 6/9: EXPOSE 8082
+--> Using cache 83fee93dcda69497094b2dec71fd1300e0b30440236ba7a3f51edca02b961b9f
+--> 83fee93dcda6
+STEP 7/9: RUN addgroup --system app && adduser --system --ingroup app app
+--> Using cache 12b555cdf9bd3d666df4adedcc3afd0967025dc72a9022abe28cb16aa12246b5
+--> 12b555cdf9bd
+STEP 8/9: USER app
+--> Using cache 4bd5abd49a51b1b41f192492666fed496569e83ba09ec5bdb163a350cc8f7a5a
+--> 4bd5abd49a51
+STEP 9/9: CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8082"]
+--> Using cache 3183fe88bffbb713e4933a20c0a237d9496499c081bc658590a622b2b6a5ea78
+COMMIT docker.io/library/quickticket-payments:v1
+--> 3183fe88bffb
+Successfully tagged docker.io/library/quickticket-payments:v1
+3183fe88bffbb713e4933a20c0a237d9496499c081bc658590a622b2b6a5ea78
+Successfully built 3183fe88bffb
+Successfully tagged quickticket-payments:v1
+[36mINFO[0m[0000] Importing image(s) into cluster 'quickticket' 
+[36mINFO[0m[0000] Starting new tools node...                   
+[36mINFO[0m[0000] Starting node 'k3d-quickticket-tools'        
+[36mINFO[0m[0000] Saving 1 tarball(s) to shared image volume... 
+[36mINFO[0m[0001] Importing images into nodes...               
+[36mINFO[0m[0001] Importing images from tarball '/k3d/images/k3d-quickticket-images-20260716132459-file-quickticket-images.tar' into node 'k3d-quickticket-server-0'... 
+[36mINFO[0m[0003] Removing the tarball(s) from image volume... 
+[36mINFO[0m[0004] Removing k3d-tools node...                   
+[36mINFO[0m[0004] Successfully imported image(s)               
+[36mINFO[0m[0004] Successfully imported 1 image(s) into 1 cluster(s) 
+namespace/argo-rollouts created
+customresourcedefinition.apiextensions.k8s.io/analysisruns.argoproj.io created
+customresourcedefinition.apiextensions.k8s.io/analysistemplates.argoproj.io created
+customresourcedefinition.apiextensions.k8s.io/clusteranalysistemplates.argoproj.io created
+customresourcedefinition.apiextensions.k8s.io/experiments.argoproj.io created
+customresourcedefinition.apiextensions.k8s.io/rollouts.argoproj.io created
+serviceaccount/argo-rollouts created
+clusterrole.rbac.authorization.k8s.io/argo-rollouts created
+clusterrole.rbac.authorization.k8s.io/argo-rollouts-aggregate-to-admin created
+clusterrole.rbac.authorization.k8s.io/argo-rollouts-aggregate-to-edit created
+clusterrole.rbac.authorization.k8s.io/argo-rollouts-aggregate-to-view created
+clusterrolebinding.rbac.authorization.k8s.io/argo-rollouts created
+configmap/argo-rollouts-config created
+secret/argo-rollouts-notification-secret created
+service/argo-rollouts-metrics created
+deployment.apps/argo-rollouts created
+deployment.apps/argo-rollouts condition met
+persistentvolumeclaim/postgres-data created
+deployment.apps/postgres created
+service/postgres created
+deployment.apps/redis created
+service/redis created
+deployment.apps/events created
+service/events created
+deployment.apps/payments created
+service/payments created
+deployment.apps/notifications created
+service/notifications created
+analysistemplate.argoproj.io/gateway-error-rate created
+rollout.argoproj.io/gateway created
+service/gateway created
+poddisruptionbudget.policy/gateway-pdb created
+poddisruptionbudget.policy/events-pdb created
+poddisruptionbudget.policy/payments-pdb created
+poddisruptionbudget.policy/notifications-pdb created
+Waiting for deployment "postgres" rollout to finish: 0 of 1 updated replicas are available...
+deployment "postgres" successfully rolled out
+Progressing - updated replicas are still becoming available
+Healthy
+deployment "events" successfully rolled out
+deployment "payments" successfully rolled out
+deployment "notifications" successfully rolled out
+namespace/monitoring created
+serviceaccount/prometheus created
+clusterrole.rbac.authorization.k8s.io/prometheus created
+clusterrolebinding.rbac.authorization.k8s.io/prometheus created
+configmap/prometheus-config created
+deployment.apps/prometheus created
+service/prometheus created
+deployment.apps/mixedload created
+Waiting for deployment "mixedload" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "mixedload" rollout to finish: 1 of 2 updated replicas are available...
+deployment "mixedload" successfully rolled out
+Waiting for deployment "prometheus" rollout to finish: 0 of 1 updated replicas are available...
+deployment "prometheus" successfully rolled out
+DROP TABLE
+NOTICE:  table "orders" does not exist, skipping
+NOTICE:  table "events" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+INSERT 0 5
+
+[notice] A new release of pip is available: 26.1.1 -> 26.1.2
+[notice] To update, run: /Users/ivan-filatov/vscode_projects/SRE-Intro-inno/.venv/bin/python3.14 -m pip install --upgrade pip
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running stamp_revision  -> a1b2c3d4e5f6
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade a1b2c3d4e5f6 -> b2c3d4e5f6a7, add email column to events
+
+=== Task 1: replicas ===
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/events          2/2     2            2           86s
+deployment.apps/mixedload       2/2     2            2           40s
+deployment.apps/notifications   2/2     2            2           86s
+deployment.apps/payments        2/2     2            2           86s
+deployment.apps/postgres        1/1     1            1           87s
+deployment.apps/redis           1/1     1            1           86s
+
+NAME                          DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+rollout.argoproj.io/gateway   5         5         5            5           86s
+
+=== Task 1: pod kill 5xx ===
+5xx before: 0
+pod "gateway-764d4f9d55-2d65w" deleted from default namespace
+pod "events-5b66c46cf8-bqmpf" deleted from default namespace
+5xx after: 0
+
+=== Task 1: PDB ===
+NAME                MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+events-pdb          1               N/A               1                     102s
+gateway-pdb         2               N/A               3                     102s
+notifications-pdb   N/A             1                 1                     102s
+payments-pdb        1               N/A               1                     102s
+[
+    {
+        "labelSelector": {
+            "matchLabels": {
+                "app": "gateway"
+            }
+        },
+        "maxSkew": 1,
+        "topologyKey": "kubernetes.io/hostname",
+        "whenUnsatisfiable": "ScheduleAnyway"
+    }
+]
+NAME                       READY   STATUS    RESTARTS      AGE    IP           NODE                       NOMINATED NODE   READINESS GATES
+gateway-764d4f9d55-2z6qq   1/1     Running   0             16s    10.42.0.28   k3d-quickticket-server-0   <none>           <none>
+gateway-764d4f9d55-bc9v6   1/1     Running   1 (51s ago)   102s   10.42.0.18   k3d-quickticket-server-0   <none>           <none>
+gateway-764d4f9d55-ctrmn   1/1     Running   1 (61s ago)   102s   10.42.0.22   k3d-quickticket-server-0   <none>           <none>
+gateway-764d4f9d55-mlwf9   1/1     Running   1 (61s ago)   102s   10.42.0.21   k3d-quickticket-server-0   <none>           <none>
+gateway-764d4f9d55-n9w7c   1/1     Running   1 (51s ago)   102s   10.42.0.19   k3d-quickticket-server-0   <none>           <none>
+
+=== Task 1: PDB eviction block ===
+poddisruptionbudget.policy/events-pdb patched
+{
+    "kind": "Status",
+    "apiVersion": "v1",
+    "metadata": {},
+    "status": "Failure",
+    "message": "Cannot evict pod as it would violate the pod's disruption budget.",
+    "reason": "TooManyRequests",
+    "details": {
+        "causes": [
+            {
+                "reason": "DisruptionBudget",
+                "message": "The disruption budget events-pdb needs 2 healthy pods and has 2 currently"
+            }
+        ]
+    },
+    "code": 429
+}
+poddisruptionbudget.policy/events-pdb patched
+scripts/lab12-setup.sh: line 99: 16051 Terminated: 15          kubectl proxy --port=8901 > /tmp/proxy.log 2>&1
+
+=== Task 2: rolling restart 5xx ===
+5xx before restart: 0
+rollout 'gateway' restarts in 0s
+Progressing - waiting for rollout spec update to be observed
+Progressing - rollout is restarting
+Healthy
+5xx after restart: 0
+
+=== Task 2: CONCURRENTLY index ===
+5xx before migration: 0
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade b2c3d4e5f6a7 -> c3d4e5f6a7b8, index events.event_date concurrently
+
+real	0m0.232s
+user	0m0.166s
+sys	0m0.027s
+    "idx_events_event_date" btree (event_date)
+5xx after migration: 0
+
+=== Bonus: expand-and-contract ===
+5xx baseline: 0
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade c3d4e5f6a7b8 -> d4e5f6a7b8c9, add events.scheduled_at column
+5xx after M1: 0
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  26.62kB
+STEP 1/9: FROM python:3.13-slim
+STEP 2/9: WORKDIR /app
+--> Using cache 0750fea72514607a90827503a76018d9ac6e3ea2eecbb4af256ddd579f667a0e
+--> 0750fea72514
+STEP 3/9: COPY requirements.txt .
+--> Using cache 1e0fef536d2fc5b4b68b18108ddcaf6b4e867d83769b24b4498ee18f2ae2138f
+--> 1e0fef536d2f
+STEP 4/9: RUN pip install --no-cache-dir -r requirements.txt
+--> Using cache d4f237f50f36e0f86d9e145634744bb3aea5f230ae81e6cac6daf2c31d66e910
+--> d4f237f50f36
+STEP 5/9: COPY main.py .
+--> Using cache efda1023c607519530f119f091bd6b7ff560b2ee7cc540144052e08344c4ba00
+--> efda1023c607
+STEP 6/9: EXPOSE 8081
+--> Using cache f67c293d7ed43bae4274f09ea48a724d68690041c0d516ac8b085bf466d0b1ce
+--> f67c293d7ed4
+STEP 7/9: RUN addgroup --system app && adduser --system --ingroup app app
+--> Using cache 727b493bdbbb68a17c434f82f3aa08f2106598ed8e0eaa41e6aa47d7ce455073
+--> 727b493bdbbb
+STEP 8/9: USER app
+--> Using cache 1769897aba7f5fe9c7e5d8182a6127aff3a8a93fa0d8aab47eaf6ca4331b11ab
+--> 1769897aba7f
+STEP 9/9: CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8081"]
+--> Using cache 8d1ce55ac205a46709f0ac590a5a1ad1b45acb8a07b07f9ec74f0a11b11e1c93
+COMMIT docker.io/library/quickticket-events:v1
+--> 8d1ce55ac205
+Successfully tagged docker.io/library/quickticket-events:v1
+8d1ce55ac205a46709f0ac590a5a1ad1b45acb8a07b07f9ec74f0a11b11e1c93
+Successfully built 8d1ce55ac205
+Successfully tagged quickticket-events:v1
+[36mINFO[0m[0000] Importing image(s) into cluster 'quickticket' 
+[36mINFO[0m[0000] Starting new tools node...                   
+[36mINFO[0m[0000] Starting node 'k3d-quickticket-tools'        
+[36mINFO[0m[0000] Saving 1 tarball(s) to shared image volume... 
+[36mINFO[0m[0001] Importing images into nodes...               
+[36mINFO[0m[0001] Importing images from tarball '/k3d/images/k3d-quickticket-images-20260716132855-file-quickticket-events.tar' into node 'k3d-quickticket-server-0'... 
+[36mINFO[0m[0003] Removing the tarball(s) from image volume... 
+[36mINFO[0m[0004] Removing k3d-tools node...                   
+[36mINFO[0m[0004] Successfully imported image(s)               
+[36mINFO[0m[0004] Successfully imported 1 image(s) into 1 cluster(s) 
+deployment.apps/events restarted
+Waiting for deployment "events" rollout to finish: 0 out of 2 new replicas have been updated...
+Waiting for deployment "events" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "events" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "events" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "events" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "events" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "events" rollout to finish: 1 old replicas are pending termination...
+deployment "events" successfully rolled out
+5xx after Deploy A: 0
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade d4e5f6a7b8c9 -> e5f6a7b8c9d0, backfill events.scheduled_at
+5xx after M2: 0
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  26.62kB
+STEP 1/9: FROM python:3.13-slim
+STEP 2/9: WORKDIR /app
+--> Using cache 0750fea72514607a90827503a76018d9ac6e3ea2eecbb4af256ddd579f667a0e
+--> 0750fea72514
+STEP 3/9: COPY requirements.txt .
+--> Using cache 1e0fef536d2fc5b4b68b18108ddcaf6b4e867d83769b24b4498ee18f2ae2138f
+--> 1e0fef536d2f
+STEP 4/9: RUN pip install --no-cache-dir -r requirements.txt
+--> Using cache d4f237f50f36e0f86d9e145634744bb3aea5f230ae81e6cac6daf2c31d66e910
+--> d4f237f50f36
+STEP 5/9: COPY main.py .
+--> Using cache f3927e6cf43197360129ccd11138ea53f90ab6b37acfa9f6477c5d079863ed64
+--> f3927e6cf431
+STEP 6/9: EXPOSE 8081
+--> Using cache 93e2f834feaedd1edd92bd32a4672605eaf9032e0d7ed99bd3ce8ca2ef35f200
+--> 93e2f834feae
+STEP 7/9: RUN addgroup --system app && adduser --system --ingroup app app
+--> Using cache 88f5b4b7c1d6d4b573330bc41ae95895d474eed087e9e2354dc6c6fd885ab174
+--> 88f5b4b7c1d6
+STEP 8/9: USER app
+--> Using cache a3b26031cd08a6520694681a09b467125fcb689d0d4369ec45d0264307f5ed4a
+--> a3b26031cd08
+STEP 9/9: CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8081"]
+--> Using cache ee2697d8de169c91e934e7ac5785961f8f9764825c443c717bb2a70205162d63
+COMMIT docker.io/library/quickticket-events:v1
+--> ee2697d8de16
+Successfully tagged docker.io/library/quickticket-events:v1
+ee2697d8de169c91e934e7ac5785961f8f9764825c443c717bb2a70205162d63
+Successfully built ee2697d8de16
+Successfully tagged quickticket-events:v1
+[36mINFO[0m[0000] Importing image(s) into cluster 'quickticket' 
+[36mINFO[0m[0000] Starting new tools node...                   
+[36mINFO[0m[0000] Starting node 'k3d-quickticket-tools'        
+[36mINFO[0m[0000] Saving 1 tarball(s) to shared image volume... 
+[36mINFO[0m[0001] Importing images into nodes...               
+[36mINFO[0m[0001] Importing images from tarball '/k3d/images/k3d-quickticket-images-20260716132915-file-quickticket-events.tar' into node 'k3d-quickticket-server-0'... 
+[36mINFO[0m[0003] Removing the tarball(s) from image volume... 
+[36mINFO[0m[0004] Removing k3d-tools node...                   
+[36mINFO[0m[0004] Successfully imported image(s)               
+[36mINFO[0m[0004] Successfully imported 1 image(s) into 1 cluster(s) 
+deployment.apps/events restarted
+Waiting for deployment "events" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "events" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "events" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "events" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "events" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "events" rollout to finish: 1 old replicas are pending termination...
+deployment "events" successfully rolled out
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade e5f6a7b8c9d0 -> f6a7b8c9d0e1, drop events.event_date
+5xx final: 0
+                                        Table "public.events"
+    Column     |           Type           | Collation | Nullable |              Default               
+---------------+--------------------------+-----------+----------+------------------------------------
+ id            | integer                  |           | not null | nextval('events_id_seq'::regclass)
+ name          | text                     |           | not null | 
+ venue         | text                     |           | not null | 
+ total_tickets | integer                  |           | not null | 
+ price_cents   | integer                  |           | not null | 
+ email         | character varying(255)   |           |          | 
+ scheduled_at  | timestamp with time zone |           | not null | 
+Indexes:
+    "events_pkey" PRIMARY KEY, btree (id)
+Referenced by:
+    TABLE "orders" CONSTRAINT "orders_event_id_fkey" FOREIGN KEY (event_id) REFERENCES events(id)
+

@@ -212,15 +212,40 @@ pay_resp = await payments_bulkhead.call(
 ### Isolation proof (1 gateway replica, `BULKHEAD_PAYMENTS_MAX=3`, `PAYMENT_LATENCY_MS=3000`)
 
 ```text
-pay[2] 503
-pay[14] 200
-pay[10] 200
-pay[16] 200
-EVENTS: ok=30 slow=0
-bulkhead_rejections: target="payments" 1
+pay[14] 503
+pay[22] 503
+pay[13] 503
+pay[10] 503
+pay[21] 503
+pay[27] 503
+pay[24] 503
+=== mid-burst metrics ===
+gateway_bulkhead_in_flight{target="payments"} 3.0
+gateway_bulkhead_rejections_total{target="payments"} 7.0
+pay[17] 200
+EVENTS_WITH: ok=30 slow=0
 ```
 
-`/events` stayed fast (30/30 under 0.5s) while slow `/pay` hit the bulkhead cap and returned 503.
+`/events` stayed fast (30/30 under 0.5s) while slow `/pay` hit the bulkhead cap (`in_flight == MAX=3`) and returned 503.
+
+### Contrast — without bulkhead
+
+Temporarily removed the bulkhead wrapper (sync payments call so the event loop can saturate — async `httpx` alone does not). Same concurrent probe:
+
+```text
+EVENTS_WITHOUT: ok=15 slow=15
+```
+
+Without isolation, half of `/events` samples exceed 0.5s under the same slow-`/pay` storm. With bulkhead: `ok=30 slow=0`.
+
+### Cap binds — `in_flight == MAX`
+
+Prometheus scrape cadence (~15s) often misses the gauge peak after a 3s burst, so the proof scrapes the gateway `/metrics` **during** the slow `/pay` window (see mid-burst block above):
+
+```text
+gateway_bulkhead_in_flight{target="payments"} 3.0   # == MAX
+gateway_bulkhead_rejections_total{target="payments"} 7.0
+```
 
 **Bulkhead vs CB ordering:** Bulkhead gates entry; retries inside count as one occupant. CB fast-fail should not burn a slot during OPEN if bulkhead wraps CB.
 

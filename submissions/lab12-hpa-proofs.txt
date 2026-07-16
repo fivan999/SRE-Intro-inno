@@ -1,0 +1,196 @@
+=== gateway resources ===
+{"limits":{"cpu":"200m","memory":"256Mi"},"requests":{"cpu":"50m","memory":"64Mi"}}
+=== apply HPA ===
+horizontalpodautoscaler.autoscaling/gateway created
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"autoscaling/v2","kind":"HorizontalPodAutoscaler","metadata":{"annotations":{},"name":"gateway","namespace":"default"},"spec":{"maxReplicas":12,"metrics":[{"resource":{"name":"cpu","target":{"averageUtilization":70,"type":"Utilization"}},"type":"Resource"}],"minReplicas":5,"scaleTargetRef":{"apiVersion":"argoproj.io/v1alpha1","kind":"Rollout","name":"gateway"}}}
+  creationTimestamp: "2026-07-16T20:57:36Z"
+  name: gateway
+  namespace: default
+  resourceVersion: "7670"
+  uid: ec166967-2ba3-4099-ade9-b763a1390989
+spec:
+  maxReplicas: 12
+  metrics:
+  - resource:
+      name: cpu
+      target:
+        averageUtilization: 70
+        type: Utilization
+    type: Resource
+  minReplicas: 5
+  scaleTargetRef:
+    apiVersion: argoproj.io/v1alpha1
+    kind: Rollout
+    name: gateway
+status:
+  currentMetrics: null
+  desiredReplicas: 0
+configmap/locustfile created
+job.batch/load-hpa created
+=== watch HPA for ~90s ===
+NAME      REFERENCE         TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: <unknown>/70%   5         12        0          0s
+gateway-764d4f9d55-bjpbl 1/1 Running
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-gwfgq 1/1 Terminating
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: <unknown>/70%   5         12        0          5s
+gateway-764d4f9d55-bjpbl 0/1 CrashLoopBackOff
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-gwfgq 1/1 Terminating
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: <unknown>/70%   5         12        0          11s
+gateway-764d4f9d55-bjpbl 0/1 CrashLoopBackOff
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 16%/70%   5         12        5          16s
+gateway-764d4f9d55-bjpbl 0/1 CrashLoopBackOff
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 16%/70%   5         12        5          22s
+gateway-764d4f9d55-bjpbl 0/1 CrashLoopBackOff
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 16%/70%   5         12        5          28s
+gateway-764d4f9d55-bjpbl 0/1 CrashLoopBackOff
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 30%/70%   5         12        5          33s
+gateway-764d4f9d55-bjpbl 0/1 CrashLoopBackOff
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 30%/70%   5         12        5          39s
+gateway-764d4f9d55-bjpbl 0/1 CrashLoopBackOff
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 30%/70%   5         12        5          44s
+gateway-764d4f9d55-bjpbl 0/1 CrashLoopBackOff
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 71%/70%   5         12        5          50s
+gateway-764d4f9d55-bjpbl 0/1 CrashLoopBackOff
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 71%/70%   5         12        5          55s
+gateway-764d4f9d55-bjpbl 0/1 CrashLoopBackOff
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 103%/70%   5         12        5          60s
+gateway-764d4f9d55-bjpbl 1/1 Running
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 103%/70%   5         12        5          66s
+gateway-764d4f9d55-bjpbl 1/1 Running
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-tpcbs 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 103%/70%   5         12        5          72s
+gateway-764d4f9d55-bjpbl 1/1 Running
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-tpcbs 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 103%/70%   5         12        6          77s
+gateway-764d4f9d55-bjpbl 1/1 Running
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-tpcbs 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 103%/70%   5         12        6          83s
+gateway-764d4f9d55-bjpbl 1/1 Running
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-tpcbs 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 103%/70%   5         12        6          88s
+gateway-764d4f9d55-bjpbl 1/1 Running
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-tpcbs 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+NAME      REFERENCE         TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 94%/70%   5         12        6          94s
+gateway-764d4f9d55-8465h 1/1 Running
+gateway-764d4f9d55-bjpbl 1/1 Running
+gateway-764d4f9d55-dbdsx 1/1 Running
+gateway-764d4f9d55-mwgkd 1/1 Running
+gateway-764d4f9d55-sw89l 1/1 Running
+gateway-764d4f9d55-tpcbs 1/1 Running
+gateway-764d4f9d55-ws695 1/1 Running
+=== final HPA ===
+NAME      REFERENCE         TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+gateway   Rollout/gateway   cpu: 94%/70%   5         12        6          99s
+Name:                                                  gateway
+Namespace:                                             default
+Labels:                                                <none>
+Annotations:                                           <none>
+CreationTimestamp:                                     Thu, 16 Jul 2026 23:57:36 +0300
+Reference:                                             Rollout/gateway
+Metrics:                                               ( current / target )
+  resource cpu on pods  (as a percentage of request):  94% (47m) / 70%
+Min replicas:                                          5
+Max replicas:                                          12
+Rollout pods:                                          6 current / 7 desired
+Conditions:
+  Type            Status  Reason              Message
+  ----            ------  ------              -------
+  AbleToScale     True    SucceededRescale    the HPA controller was able to update the target scale to 7
+  ScalingActive   True    ValidMetricFound    the HPA was able to successfully calculate a replica count from cpu resource utilization (percentage of request)
+  ScalingLimited  False   DesiredWithinRange  the desired count is within the acceptable range
+Events:
+  Type    Reason             Age   From                       Message
+  ----    ------             ----  ----                       -------
+  Normal  SuccessfulRescale  39s   horizontal-pod-autoscaler  New size: 6; reason: cpu resource utilization (percentage of request) above target
+  Normal  SuccessfulRescale  9s    horizontal-pod-autoscaler  New size: 7; reason: cpu resource utilization (percentage of request) above target
+HPA DONE

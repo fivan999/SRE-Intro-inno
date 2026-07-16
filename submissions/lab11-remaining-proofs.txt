@@ -1,0 +1,48 @@
+=== wait ready ===
+try=1 gw=0 ev=0 pay=0
+try=2 gw=0 ev=0 pay=0
+try=3 gw=0 ev=0 pay=0
+try=4 gw=0 ev=0 pay=0
+try=5 gw=0 ev=0 pay=0
+try=6 gw=0 ev=0 pay=2
+try=7 gw=0 ev=0 pay=2
+try=8 gw=0 ev=0 pay=2
+try=9 gw=0 ev=0 pay=2
+try=10 gw=0 ev=1 pay=2
+try=11 gw=1 ev=2 pay=2
+events-6f9d54f586-2q8gs         1/1   Running   7 (51s ago)   10h
+events-6f9d54f586-xsbsb         1/1   Running   7 (51s ago)   10h
+gateway-67777d54fc-47zc8        1/1   Running   12 (3s ago)   10h
+mixedload-96c9f49fd-bpbvr       1/1   Running   0             35s
+mixedload-96c9f49fd-d48mt       1/1   Running   0             36s
+notifications-dccd599cc-c8xqp   1/1   Running   7 (51s ago)   10h
+notifications-dccd599cc-cs86k   1/1   Running   7 (51s ago)   10h
+payments-7876b547c5-flhjn       1/1   Running   0             36s
+payments-7876b547c5-l6dvc       1/1   Running   0             36s
+postgres-7677cfbf84-fjmtk       1/1   Running   7 (51s ago)   10h
+redis-fbb467988-4scrw           1/1   Running   7 (51s ago)   10h
+1
+[{"name":"APP_VERSION","value":"v2"},{"name":"EVENTS_URL","value":"http://events:8081"},{"name":"PAYMENTS_URL","value":"http://payments:8082"},{"name":"NOTIFICATIONS_URL","value":"http://notifications:8083"},{"name":"GATEWAY_TIMEOUT_MS","value":"5000"},{"name":"BULKHEAD_PAYMENTS_MAX","value":"3"}]
+=== WITH bulkhead MAX=3 ===
+ENV_IDX=5
+gw_ready=1 gw_pods=1
+deployment "payments" successfully rolled out
+pay[14] 503
+pay[22] 503
+pay[13] 503
+pay[10] 503
+pay[21] 503
+pay[27] 503
+pay[24] 503
+=== mid-burst metrics ===
+gateway_bulkhead_in_flight{target="payments"} 3.0
+gateway_bulkhead_rejections_total{target="payments"} 7.0
+pay[17] 200
+EVENTS_WITH: ok=30 slow=0
+=== WITHOUT bulkhead MAX=1000 ===
+gw_ready=1
+EVENTS_WITHOUT: ok=30 slow=0
+DONE bulkhead
+=== CONTRAST without bulkhead (sync charge) ===
+EVENTS_WITHOUT: ok=15 slow=15
+CONTRAST DONE
